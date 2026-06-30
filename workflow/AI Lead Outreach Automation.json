@@ -1,0 +1,724 @@
+{
+  "name": "AI Lead Outreach Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -6544,
+        2432
+      ],
+      "id": "3fdf9f61-53ce-4e35-adc7-7ecca444d266",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bq6vwjQiVotqbexZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -7696,
+        2192
+      ],
+      "id": "e3646b59-8a26-455d-9e85-35657a3f5991",
+      "name": "Start Workflow",
+      "notesInFlow": false,
+      "notes": "Entry point of the Lead Generation automation workflow."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f619f083-29cf-48af-9750-d08f92783b8e",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -6848,
+        2192
+      ],
+      "id": "89caffa5-4bac-4471-b896-362b671dad2c",
+      "name": "Filter Pending Leads",
+      "notesInFlow": false,
+      "notes": "Processes only leads with status = \"pending\"."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a B2B AI Automation Consultant.\n\nYour task is to write a personalized cold outreach email to the target company.\n\nCompany: {{ $json.company }}\nIndustry: {{ $json.industry }}\nWebsite: {{ $json.website }}\nCity: {{ $json.city }}\nLead Score: {{ $json.score }}\n\nRequirements:\n- Write as an external consultant.\n- Do NOT pretend to work for the company.\n- Suggest one realistic automation opportunity based on the company's industry.\n- Keep the email under 120 words.\n- Include a subject line.\n- Keep the tone professional and concise.\n- End with a clear call-to-action.\n\nUse the following sender information:\n\nName: Armagan Kayikci\nTitle: Computer Engineering Student & AI Automation Developer\n\nDo not use placeholders such as:\n[Your Name]\n[Your Company]\n[Your Title]\n[Contact Name]\n\nUse the sender information directly.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -6576,
+        2176
+      ],
+      "id": "a1c26569-1a25-4c23-9102-0531496b15eb",
+      "name": "Generate Personalized Email",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "notesInFlow": false,
+      "onError": "continueErrorOutput",
+      "notes": "Generates a personalized cold email using Gemini AI based on company information."
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ ($json.output || '').split('\\n')[0].replace('Subject:', '').replace(/\\*\\*/g, '').trim() }}",
+        "message": "={{ $json.output }}",
+        "options": {
+          "sendTo": "={{ $('Read Leads').item.json.recipient_email }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -5984,
+        2112
+      ],
+      "id": "4baa2052-c753-4925-8ca0-b7ce698649bc",
+      "name": "Create Gmail Draft",
+      "webhookId": "d206888a-c7d1-4dad-b820-1d6817eb9d77",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "notesInFlow": false,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "mhwatR2Yv5iThrAR",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Creates a Gmail draft without sending the email."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5372fe93-276b-42ab-a993-4c8611d0c680",
+              "name": "mode",
+              "value": "draft",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -7392,
+        2192
+      ],
+      "id": "78559cd7-28fb-4d98-b1d8-bb0b1473d760",
+      "name": "Set Mode",
+      "notesInFlow": false,
+      "notes": "Switches between Draft Mode and Send Mode."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "71f99450-1110-420a-ac2c-852eb6de8fd1",
+              "leftValue": "={{ $('Set Mode').item.json.mode }}",
+              "rightValue": "draft",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -6208,
+        1968
+      ],
+      "id": "f8b2cd8a-a713-4a60-9519-b6f3c62e9c37",
+      "name": "Check Send Mode",
+      "notesInFlow": false,
+      "notes": "Routes the workflow to Draft or Send mode."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Read Leadss').item.json.recipient_email }}",
+        "subject": "={{ $json.output.match(/Subject:\\s*(.*)/)[1].replace(/\\*\\*/g, '') }}",
+        "message": "={{ $json.output.replace(/(\\*\\*)?Subject:.*\\n\\n/, '') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -5984,
+        2288
+      ],
+      "id": "19444eba-1b75-4730-9473-36c2a7ea7b38",
+      "name": "Send Gmail Email",
+      "webhookId": "3e65443c-2227-46fe-8efb-0734da1f4cfa",
+      "notesInFlow": false,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "mhwatR2Yv5iThrAR",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Sends the generated email to the recipient."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU",
+          "mode": "list",
+          "cachedResultName": "Lead Generation Demo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sayfa1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Read Leads').item.json.row_number }}",
+            "status": "={{ $('Set Mode').item.json.mode === 'draft' ? 'draft_created' : 'sent' }}",
+            "email_subject": "={{ $('Generate Personalized Email').item.json.output.match(/Subject:\\s*(.*)/)[1].replace(/\\*\\*/g, '') }}",
+            "processed_at": "={{ $now.toISO() }}",
+            "execution_id": "={{ $execution.id }}",
+            "error_message": "={{ ' ' }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "industry",
+              "displayName": "industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recipient_email",
+              "displayName": "recipient_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_subject",
+              "displayName": "email_subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -5696,
+        2192
+      ],
+      "id": "6f20d1bf-15e7-43cc-8ed9-3b9cb64aa11e",
+      "name": "Update Lead Status",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "notesInFlow": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "tHUNBunFJnu4mrlV",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Updates processing status, timestamp, subject and execution metadata."
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU",
+          "mode": "list",
+          "cachedResultName": "Lead Generation Demo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sayfa1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -7120,
+        2192
+      ],
+      "id": "aad49859-16d9-4e22-a983-692e74a3fea4",
+      "name": "Read Leads",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "notesInFlow": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "tHUNBunFJnu4mrlV",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Reads lead records from the Google Sheets database."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU",
+          "mode": "list",
+          "cachedResultName": "Lead Generation Demo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sayfa1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Read Leads').item.json.row_number }}",
+            "status": "failed",
+            "error_message": "={{ 'Failed during email delivery or AI generation. Check n8n execution log. Execution ID: ' + $execution.id }}",
+            "processed_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "industry",
+              "displayName": "industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recipient_email",
+              "displayName": "recipient_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_subject",
+              "displayName": "email_subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -5392,
+        2912
+      ],
+      "id": "f79e81e2-3a51-4bd4-9b0e-88b7980aea40",
+      "name": "Update Failed Lead",
+      "notesInFlow": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "tHUNBunFJnu4mrlV",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Logs failed executions and stores the error details for troubleshooting."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Personalized Email",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Workflow": {
+      "main": [
+        [
+          {
+            "node": "Set Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Pending Leads": {
+      "main": [
+        [
+          {
+            "node": "Generate Personalized Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Personalized Email": {
+      "main": [
+        [
+          {
+            "node": "Check Send Mode",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Failed Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Gmail Draft": {
+      "main": [
+        [
+          {
+            "node": "Update Lead Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Failed Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Mode": {
+      "main": [
+        [
+          {
+            "node": "Read Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Send Mode": {
+      "main": [
+        [
+          {
+            "node": "Create Gmail Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Gmail Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Leads": {
+      "main": [
+        [
+          {
+            "node": "Filter Pending Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead Status": {
+      "main": [
+        []
+      ]
+    },
+    "Send Gmail Email": {
+      "main": [
+        [
+          {
+            "node": "Update Lead Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Failed Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d7cd4f8f-1f8e-488d-94db-0b751868e08f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8bf7ca269a6b6631747add551bef0388d84d2e23d4fa63726f1d028ddfc95c37"
+  },
+  "id": "km4LUKHmCL4cdSd8",
+  "tags": []
+}
