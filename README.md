@@ -5,10 +5,19 @@
 ![Google Sheets](https://img.shields.io/badge/Google-Sheets-34A853?logo=googlesheets&logoColor=white)
 ![Gmail](https://img.shields.io/badge/Gmail-API-EA4335?logo=gmail&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
+![GitHub last commit](https://img.shields.io/github/last-commit/Armgnkykc19/AI-Lead-Outreach-Automation)
 
 An AI-powered lead outreach automation workflow built with **n8n**, **Google Gemini**, **Google Sheets**, and **Gmail**.
 
 This project automates the complete lead outreach pipeline by reading leads from Google Sheets, generating personalized cold emails with AI, creating Gmail drafts or sending emails automatically, and updating execution status back to the spreadsheet.
+
+---
+
+# 🎬 Live Demo
+
+<p align="center">
+  <img src="images/demo.gif" alt="Workflow Demo" width="1000">
+</p>
 
 ---
 
@@ -20,7 +29,7 @@ This project automates the complete lead outreach pipeline by reading leads from
 - ✅ Automatic lead status updates
 - 📝 Execution ID tracking
 - ⏱ Process timestamps
-- ⚠ Error logging
+- ⚠️ Error logging
 - 🔄 Automatic retry mechanism
 - 🧩 Modular workflow architecture
 - 📈 Easy to extend with new integrations
@@ -63,6 +72,7 @@ The workflow performs the following steps:
 AI-Lead-Outreach-Automation
 │
 ├── images
+│   ├── demo.gif
 │   ├── workflow.png
 │   ├── google_sheet_before.png
 │   ├── google_sheet_after.png
@@ -72,6 +82,10 @@ AI-Lead-Outreach-Automation
 ├── workflow
 │   └── AI Lead Outreach Automation.json
 │
+├── sample
+│   └── sample_leads.csv
+│
+├── INSTALLATION.md
 ├── README.md
 ├── LICENSE
 └── .gitignore
@@ -129,7 +143,16 @@ Before running the workflow:
 - Configure Gmail credentials.
 - Configure Google Gemini credentials.
 - Update the placeholder Google Sheet ID.
-- Update the sender profile inside the **Configuration** node.
+- Configure the sender profile inside the **Configuration** node.
+
+---
+
+# Included Resources
+
+- 📄 Public n8n workflow template
+- 📊 Sample lead dataset (`sample/sample_leads.csv`)
+- 📖 Installation guide (`INSTALLATION.md`)
+- 🖼️ Workflow and execution screenshots
 
 ---
 
@@ -162,11 +185,13 @@ Implemented mechanisms:
 
 # Getting Started
 
-1. Import the workflow into n8n.
-2. Configure your credentials.
-3. Update the Google Sheet ID.
-4. Configure the sender profile.
-5. Execute the workflow.
+1. Clone this repository.
+2. Follow the setup instructions in **INSTALLATION.md**.
+3. Import the workflow into n8n.
+4. Configure your credentials.
+5. Update the Google Sheet ID.
+6. Configure the sender profile.
+7. Execute the workflow.
 
 ---
 
