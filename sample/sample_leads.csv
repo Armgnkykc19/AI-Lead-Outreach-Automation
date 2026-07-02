@@ -1,0 +1,6 @@
+company,website,industry,city,score,recipient_email,status,email_subject,processed_at,error_message,execution_id
+Tesla,tesla.com,Automotive,Austin,90,demo@example.com,pending,,,,
+HubSpot,hubspot.com,CRM Software,Boston,85,demo@example.com,pending,,,,
+Airbnb,airbnb.com,Travel Technology,San Francisco,80,demo@example.com,pending,,,,
+Shopify,shopify.com,E-commerce,Ottawa,88,demo@example.com,pending,,,,
+Slack,slack.com,Workplace Communication,San Francisco,82,demo@example.com,pending,,,,
