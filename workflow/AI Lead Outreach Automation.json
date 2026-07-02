@@ -12,13 +12,7 @@
         2432
       ],
       "id": "3fdf9f61-53ce-4e35-adc7-7ecca444d266",
-      "name": "Google Gemini Chat Model",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "bq6vwjQiVotqbexZ",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
+      "name": "Google Gemini Chat Model"
     },
     {
       "parameters": {},
@@ -72,7 +66,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You are a B2B AI Automation Consultant.\n\nYour task is to write a personalized cold outreach email to the target company.\n\nCompany: {{ $json.company }}\nIndustry: {{ $json.industry }}\nWebsite: {{ $json.website }}\nCity: {{ $json.city }}\nLead Score: {{ $json.score }}\n\nRequirements:\n- Write as an external consultant.\n- Do NOT pretend to work for the company.\n- Suggest one realistic automation opportunity based on the company's industry.\n- Keep the email under 120 words.\n- Include a subject line.\n- Keep the tone professional and concise.\n- End with a clear call-to-action.\n\nUse the following sender information:\n\nName: Armagan Kayikci\nTitle: Computer Engineering Student & AI Automation Developer\n\nDo not use placeholders such as:\n[Your Name]\n[Your Company]\n[Your Title]\n[Contact Name]\n\nUse the sender information directly.",
+        "text": "=You are an experienced B2B AI Automation Consultant specializing in identifying automation opportunities for businesses.\n\nYour task is to write a personalized cold outreach email.\n\n## Company Information\n\nCompany: {{ $json.company }}\nIndustry: {{ $json.industry }}\nWebsite: {{ $json.website }}\nCity: {{ $json.city }}\nLead Score: {{ $json.score }}\n\n## Sender Profile\n\nSender Name: {{ $('Configuration').item.json.sender_name }}\nSender Title: {{ $('Configuration').item.json.sender_title }}\nSender Company: {{ $('Configuration').item.json.company_name }}\nSender Email: {{ $('Configuration').item.json.sender_email }}\nMeeting Duration: {{ $('Configuration').item.json.meeting_duration }} minutes\nEmail Style: {{ $('Configuration').item.json.email_style }}\n\nEmail Signature:\n{{ $('Configuration').item.json.email_signature }}\n\n## Instructions\n\n- Write as an independent AI Automation Consultant.\n- Never pretend to work for the target company.\n- Analyze the company's industry and suggest ONE realistic automation opportunity.\n- Mention a practical business benefit such as saving time, reducing operational costs, improving customer experience, or increasing efficiency.\n- Match the writing style to the configured Email Style.\n- Keep the email natural, concise, and personalized.\n- Do not exaggerate or make unrealistic promises.\n- Keep the email under 120 words.\n- Include a compelling subject line.\n- End with a short call-to-action asking for a {{ $('Configuration').item.json.meeting_duration }}-minute meeting.\n- Finish the email using the provided email signature exactly as given.\n\n## Output Format\n\nSubject: <email subject>\n\n<email body only>\n\n<email signature>\n\nDo not use placeholders such as:\n[Your Name]\n[Company]\n[Title]\n[Recipient]\n\nUse only the provided information.",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -106,16 +100,9 @@
       ],
       "id": "4baa2052-c753-4925-8ca0-b7ce698649bc",
       "name": "Create Gmail Draft",
-      "webhookId": "d206888a-c7d1-4dad-b820-1d6817eb9d77",
       "retryOnFail": true,
       "waitBetweenTries": 5000,
       "notesInFlow": false,
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "mhwatR2Yv5iThrAR",
-          "name": "Gmail account"
-        }
-      },
       "onError": "continueErrorOutput",
       "notes": "Creates a Gmail draft without sending the email."
     },
@@ -124,9 +111,57 @@
         "assignments": {
           "assignments": [
             {
-              "id": "5372fe93-276b-42ab-a993-4c8611d0c680",
+              "id": "config-mode",
               "name": "mode",
               "value": "draft",
+              "type": "string"
+            },
+            {
+              "id": "config-sender-name",
+              "name": "sender_name",
+              "value": "John Doe",
+              "type": "string"
+            },
+            {
+              "id": "config-sender-title",
+              "name": "sender_title",
+              "value": "AI Automation Consultant",
+              "type": "string"
+            },
+            {
+              "id": "config-sender-email",
+              "name": "sender_email",
+              "value": "john.doe@example.com",
+              "type": "string"
+            },
+            {
+              "id": "config-company-name",
+              "name": "company_name",
+              "value": "Your Company",
+              "type": "string"
+            },
+            {
+              "id": "config-meeting-duration",
+              "name": "meeting_duration",
+              "value": 15,
+              "type": "number"
+            },
+            {
+              "id": "config-email-style",
+              "name": "email_style",
+              "value": "professional",
+              "type": "string"
+            },
+            {
+              "id": "config-retry-count",
+              "name": "retry_count",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "config-email-signature",
+              "name": "email_signature",
+              "value": "Best regards,\n\nJohn Doe\nAI Automation Consultant\nYour Company",
               "type": "string"
             }
           ]
@@ -140,9 +175,9 @@
         2192
       ],
       "id": "78559cd7-28fb-4d98-b1d8-bb0b1473d760",
-      "name": "Set Mode",
+      "name": "Configuration",
       "notesInFlow": false,
-      "notes": "Switches between Draft Mode and Send Mode."
+      "notes": "Central configuration for mode, sender profile, email style, AI model and retry settings."
     },
     {
       "parameters": {
@@ -156,7 +191,7 @@
           "conditions": [
             {
               "id": "71f99450-1110-420a-ac2c-852eb6de8fd1",
-              "leftValue": "={{ $('Set Mode').item.json.mode }}",
+              "leftValue": "={{ $('Configuration').item.json.mode }}",
               "rightValue": "draft",
               "operator": {
                 "type": "string",
@@ -182,9 +217,9 @@
     },
     {
       "parameters": {
-        "sendTo": "={{ $('Read Leadss').item.json.recipient_email }}",
-        "subject": "={{ $json.output.match(/Subject:\\s*(.*)/)[1].replace(/\\*\\*/g, '') }}",
-        "message": "={{ $json.output.replace(/(\\*\\*)?Subject:.*\\n\\n/, '') }}",
+        "sendTo": "={{ $('Read Leads').item.json.recipient_email }}",
+        "subject": "={{ ($json.output || '').split('\\n')[0].replace('Subject:', '').replace(/\\*\\*/g, '').trim() }}",
+        "message": "={{ ($json.output || '').replace(/^(\\*\\*)?Subject:.*\\n*/i, '').trim() }}",
         "options": {}
       },
       "type": "n8n-nodes-base.gmail",
@@ -195,43 +230,38 @@
       ],
       "id": "19444eba-1b75-4730-9473-36c2a7ea7b38",
       "name": "Send Gmail Email",
-      "webhookId": "3e65443c-2227-46fe-8efb-0734da1f4cfa",
       "notesInFlow": false,
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "mhwatR2Yv5iThrAR",
-          "name": "Gmail account"
-        }
-      },
       "onError": "continueErrorOutput",
-      "notes": "Sends the generated email to the recipient."
+      "notes": "Sends the generated email to the recipient.",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU",
-          "mode": "list",
-          "cachedResultName": "Lead Generation Demo",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit?usp=drivesdk"
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id",
+          "cachedResultName": "Lead Generation Demo (Example)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Sayfa1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit#gid=0"
+          "value": "Leads",
+          "mode": "name",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
             "row_number": "={{ $('Read Leads').item.json.row_number }}",
-            "status": "={{ $('Set Mode').item.json.mode === 'draft' ? 'draft_created' : 'sent' }}",
-            "email_subject": "={{ $('Generate Personalized Email').item.json.output.match(/Subject:\\s*(.*)/)[1].replace(/\\*\\*/g, '') }}",
+            "status": "={{ $('Configuration').item.json.mode === 'draft' ? 'draft_created' : 'sent' }}",
+            "email_subject": "={{ ($('Generate Personalized Email').item.json.output || '').split('\\n')[0].replace('Subject:', '').replace(/\\*\\*/g, '').trim() }}",
             "processed_at": "={{ $now.toISO() }}",
             "execution_id": "={{ $execution.id }}",
-            "error_message": "={{ ' ' }}"
+            "error_message": "={{ '' }}"
           },
           "matchingColumns": [
             "row_number"
@@ -365,29 +395,23 @@
       "retryOnFail": true,
       "waitBetweenTries": 5000,
       "notesInFlow": false,
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "tHUNBunFJnu4mrlV",
-          "name": "Google Sheets account"
-        }
-      },
       "notes": "Updates processing status, timestamp, subject and execution metadata."
     },
     {
       "parameters": {
         "documentId": {
           "__rl": true,
-          "value": "1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU",
-          "mode": "list",
-          "cachedResultName": "Lead Generation Demo",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit?usp=drivesdk"
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id",
+          "cachedResultName": "Lead Generation Demo (Example)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Sayfa1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit#gid=0"
+          "value": "Leads",
+          "mode": "name",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
         },
         "options": {}
       },
@@ -402,12 +426,6 @@
       "retryOnFail": true,
       "waitBetweenTries": 5000,
       "notesInFlow": false,
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "tHUNBunFJnu4mrlV",
-          "name": "Google Sheets account"
-        }
-      },
       "notes": "Reads lead records from the Google Sheets database."
     },
     {
@@ -415,17 +433,17 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU",
-          "mode": "list",
-          "cachedResultName": "Lead Generation Demo",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit?usp=drivesdk"
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id",
+          "cachedResultName": "Lead Generation Demo (Example)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Sayfa1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XHhF3MKtywt5kgDoAeZq9gbZl-jfzoXuNJVs_FIxNHU/edit#gid=0"
+          "value": "Leads",
+          "mode": "name",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -564,12 +582,6 @@
       "id": "f79e81e2-3a51-4bd4-9b0e-88b7980aea40",
       "name": "Update Failed Lead",
       "notesInFlow": false,
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "tHUNBunFJnu4mrlV",
-          "name": "Google Sheets account"
-        }
-      },
       "notes": "Logs failed executions and stores the error details for troubleshooting."
     }
   ],
@@ -590,7 +602,7 @@
       "main": [
         [
           {
-            "node": "Set Mode",
+            "node": "Configuration",
             "type": "main",
             "index": 0
           }
@@ -638,17 +650,6 @@
         [
           {
             "node": "Update Failed Lead",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Set Mode": {
-      "main": [
-        [
-          {
-            "node": "Read Leads",
             "type": "main",
             "index": 0
           }
@@ -706,6 +707,17 @@
           }
         ]
       ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Read Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -714,11 +726,8 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "d7cd4f8f-1f8e-488d-94db-0b751868e08f",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "8bf7ca269a6b6631747add551bef0388d84d2e23d4fa63726f1d028ddfc95c37"
+    "templateCredsSetupCompleted": false
   },
-  "id": "km4LUKHmCL4cdSd8",
   "tags": []
 }
