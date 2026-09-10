@@ -3,7 +3,8 @@
   "nodes": [
     {
       "parameters": {
-        "options": {}
+        "options": {},
+        "modelName": "models/gemini-2.5-flash"
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
@@ -33,13 +34,13 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict",
+            "typeValidation": "loose",
             "version": 3
           },
           "conditions": [
             {
               "id": "f619f083-29cf-48af-9750-d08f92783b8e",
-              "leftValue": "={{ $json.status }}",
+              "leftValue": "={{ ($json.status || '').toString().trim().toLowerCase() }}",
               "rightValue": "pending",
               "operator": {
                 "type": "string",
@@ -48,7 +49,7 @@
               }
             }
           ],
-          "combinator": "or"
+          "combinator": "and"
         },
         "options": {}
       },
@@ -66,7 +67,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You are an experienced B2B AI Automation Consultant specializing in identifying automation opportunities for businesses.\n\nYour task is to write a personalized cold outreach email.\n\n## Company Information\n\nCompany: {{ $json.company }}\nIndustry: {{ $json.industry }}\nWebsite: {{ $json.website }}\nCity: {{ $json.city }}\nLead Score: {{ $json.score }}\n\n## Sender Profile\n\nSender Name: {{ $('Configuration').item.json.sender_name }}\nSender Title: {{ $('Configuration').item.json.sender_title }}\nSender Company: {{ $('Configuration').item.json.company_name }}\nSender Email: {{ $('Configuration').item.json.sender_email }}\nMeeting Duration: {{ $('Configuration').item.json.meeting_duration }} minutes\nEmail Style: {{ $('Configuration').item.json.email_style }}\n\nEmail Signature:\n{{ $('Configuration').item.json.email_signature }}\n\n## Instructions\n\n- Write as an independent AI Automation Consultant.\n- Never pretend to work for the target company.\n- Analyze the company's industry and suggest ONE realistic automation opportunity.\n- Mention a practical business benefit such as saving time, reducing operational costs, improving customer experience, or increasing efficiency.\n- Match the writing style to the configured Email Style.\n- Keep the email natural, concise, and personalized.\n- Do not exaggerate or make unrealistic promises.\n- Keep the email under 120 words.\n- Include a compelling subject line.\n- End with a short call-to-action asking for a {{ $('Configuration').item.json.meeting_duration }}-minute meeting.\n- Finish the email using the provided email signature exactly as given.\n\n## Output Format\n\nSubject: <email subject>\n\n<email body only>\n\n<email signature>\n\nDo not use placeholders such as:\n[Your Name]\n[Company]\n[Title]\n[Recipient]\n\nUse only the provided information.",
+        "text": "=You are an experienced B2B AI Automation Consultant specializing in identifying automation opportunities for businesses.\n\nYour task is to write a personalized cold outreach email.\n\n## Company Information\n\nCompany: {{ $json.company }}\nIndustry: {{ $json.industry }}\nWebsite: {{ $json.website }}\nCity: {{ $json.city }}\nLead Score: {{ $json.score }}\n\n## Campaign Topic\n\n{{ ($json.topic || '').toString().trim() || ($('Configuration').item.json.campaign_topic || '').toString().trim() || '(not specified)' }}\n\n## Requested Subject Line\n\n{{ ($json.subject_override || '').toString().trim() || '(none - write your own)' }}\n\n## Sender Profile\n\nSender Name: {{ $('Configuration').item.json.sender_name }}\nSender Title: {{ $('Configuration').item.json.sender_title }}\nSender Company: {{ $('Configuration').item.json.company_name }}\nSender Email: {{ $('Configuration').item.json.sender_email }}\nMeeting Duration: {{ $('Configuration').item.json.meeting_duration }} minutes\nEmail Style: {{ $('Configuration').item.json.email_style }}\n\n## Email Language\n\n{{ ($('Configuration').item.json.email_language || '').toString().trim() || '(match the language of the Campaign Topic; if no topic is given, use English)' }}\n\n## Instructions\n\n- Write as an independent AI Automation Consultant.\n- Never pretend to work for the target company.\n- If a Campaign Topic is provided above, the automation opportunity you suggest MUST be based on that topic. Do not invent an unrelated one.\n- If the Campaign Topic is \"(not specified)\", analyze the company's industry and choose ONE realistic automation opportunity yourself.\n- If a Requested Subject Line is provided, write the body so that it matches that subject line.\n- Write plain text only. Do not use markdown formatting such as ** or *.\n- Write the ENTIRE email, subject line included, in the language given under Email Language.\n- On the second line, report the language you actually wrote in, exactly as `English` or `Turkish`.\n- Mention a practical business benefit such as saving time, reducing operational costs, improving customer experience, or increasing efficiency.\n- Match the writing style to the configured Email Style.\n- Keep the email natural, concise, and personalized.\n- Do not exaggerate or make unrealistic promises.\n- Keep the email under 120 words.\n- Include a compelling subject line.\n- End with a short call-to-action asking for a {{ $('Configuration').item.json.meeting_duration }}-minute meeting.\n- Do NOT write any sign-off or signature. End with the call to action. The signature is appended automatically after generation.\n\n## Output Format\n\nSubject: <email subject>\nLanguage: <English or Turkish>\n\n<email body only>\n\nDo not use placeholders such as:\n[Your Name]\n[Company]\n[Title]\n[Recipient]\n\nUse only the provided information.",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -81,21 +82,22 @@
       "waitBetweenTries": 5000,
       "notesInFlow": false,
       "onError": "continueErrorOutput",
-      "notes": "Generates a personalized cold email using Gemini AI based on company information."
+      "notes": "Generates a personalized cold email using Gemini AI based on company information.",
+      "maxTries": 3
     },
     {
       "parameters": {
         "resource": "draft",
-        "subject": "={{ ($json.output || '').split('\\n')[0].replace('Subject:', '').replace(/\\*\\*/g, '').trim() }}",
-        "message": "={{ $json.output }}",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_body }}",
         "options": {
-          "sendTo": "={{ $('Read Leads').item.json.recipient_email }}"
+          "sendTo": "={{ $json.recipient_email }}"
         }
       },
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        -5984,
+        -5712,
         2112
       ],
       "id": "4baa2052-c753-4925-8ca0-b7ce698649bc",
@@ -104,7 +106,8 @@
       "waitBetweenTries": 5000,
       "notesInFlow": false,
       "onError": "continueErrorOutput",
-      "notes": "Creates a Gmail draft without sending the email."
+      "notes": "Creates a Gmail draft without sending the email.",
+      "maxTries": 3
     },
     {
       "parameters": {
@@ -153,15 +156,39 @@
               "type": "string"
             },
             {
-              "id": "config-retry-count",
-              "name": "retry_count",
-              "value": 3,
-              "type": "number"
+              "id": "config-campaign-topic",
+              "name": "campaign_topic",
+              "value": "",
+              "type": "string"
             },
             {
-              "id": "config-email-signature",
-              "name": "email_signature",
-              "value": "Best regards,\n\nJohn Doe\nAI Automation Consultant\nYour Company",
+              "id": "config-campaign-subject-prefix",
+              "name": "campaign_subject_prefix",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "config-email-language",
+              "name": "email_language",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "config-signature-closing-en",
+              "name": "signature_closing_en",
+              "value": "Best regards,",
+              "type": "string"
+            },
+            {
+              "id": "config-signature-closing-tr",
+              "name": "signature_closing_tr",
+              "value": "Saygılarımla,",
+              "type": "string"
+            },
+            {
+              "id": "config-signature-block",
+              "name": "signature_block",
+              "value": "John Doe\nAI Automation Consultant\nYour Company",
               "type": "string"
             }
           ]
@@ -191,7 +218,7 @@
           "conditions": [
             {
               "id": "71f99450-1110-420a-ac2c-852eb6de8fd1",
-              "leftValue": "={{ $('Configuration').item.json.mode }}",
+              "leftValue": "={{ $json.mode }}",
               "rightValue": "draft",
               "operator": {
                 "type": "string",
@@ -207,7 +234,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -6208,
+        -5936,
         1968
       ],
       "id": "f8b2cd8a-a713-4a60-9519-b6f3c62e9c37",
@@ -217,15 +244,15 @@
     },
     {
       "parameters": {
-        "sendTo": "={{ $('Read Leads').item.json.recipient_email }}",
-        "subject": "={{ ($json.output || '').split('\\n')[0].replace('Subject:', '').replace(/\\*\\*/g, '').trim() }}",
-        "message": "={{ ($json.output || '').replace(/^(\\*\\*)?Subject:.*\\n*/i, '').trim() }}",
+        "sendTo": "={{ $json.recipient_email }}",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_body }}",
         "options": {}
       },
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        -5984,
+        -5712,
         2288
       ],
       "id": "19444eba-1b75-4730-9473-36c2a7ea7b38",
@@ -234,7 +261,8 @@
       "onError": "continueErrorOutput",
       "notes": "Sends the generated email to the recipient.",
       "retryOnFail": true,
-      "waitBetweenTries": 5000
+      "waitBetweenTries": 5000,
+      "maxTries": 3
     },
     {
       "parameters": {
@@ -256,12 +284,14 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "row_number": "={{ $('Read Leads').item.json.row_number }}",
-            "status": "={{ $('Configuration').item.json.mode === 'draft' ? 'draft_created' : 'sent' }}",
-            "email_subject": "={{ ($('Generate Personalized Email').item.json.output || '').split('\\n')[0].replace('Subject:', '').replace(/\\*\\*/g, '').trim() }}",
+            "row_number": "={{ $('Parse Email').item.json.row_number }}",
+            "status": "={{ $('Parse Email').item.json.mode === 'draft' ? 'draft_created' : 'sent' }}",
+            "email_subject": "={{ $('Parse Email').item.json.email_subject }}",
             "processed_at": "={{ $now.toISO() }}",
             "execution_id": "={{ $execution.id }}",
-            "error_message": "={{ '' }}"
+            "error_message": "={{ '' }}",
+            "subject_source": "={{ $('Parse Email').item.json.subject_source }}",
+            "topic_used": "={{ $('Parse Email').item.json.topic_used }}"
           },
           "matchingColumns": [
             "row_number"
@@ -368,6 +398,42 @@
               "removed": false
             },
             {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subject_override",
+              "displayName": "subject_override",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subject_source",
+              "displayName": "subject_source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "topic_used",
+              "displayName": "topic_used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
               "id": "row_number",
               "displayName": "row_number",
               "required": false,
@@ -387,7 +453,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        -5696,
+        -5424,
         2192
       ],
       "id": "6f20d1bf-15e7-43cc-8ed9-3b9cb64aa11e",
@@ -395,7 +461,8 @@
       "retryOnFail": true,
       "waitBetweenTries": 5000,
       "notesInFlow": false,
-      "notes": "Updates processing status, timestamp, subject and execution metadata."
+      "notes": "Updates processing status, timestamp, subject and execution metadata.",
+      "maxTries": 3
     },
     {
       "parameters": {
@@ -426,7 +493,8 @@
       "retryOnFail": true,
       "waitBetweenTries": 5000,
       "notesInFlow": false,
-      "notes": "Reads lead records from the Google Sheets database."
+      "notes": "Reads lead records from the Google Sheets database.",
+      "maxTries": 3
     },
     {
       "parameters": {
@@ -448,10 +516,14 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "row_number": "={{ $('Read Leads').item.json.row_number }}",
+            "row_number": "={{ $json.row_number || $('Read Leads').item.json.row_number }}",
             "status": "failed",
-            "error_message": "={{ 'Failed during email delivery or AI generation. Check n8n execution log. Execution ID: ' + $execution.id }}",
-            "processed_at": "={{ $now.toISO() }}"
+            "error_message": "={{ 'Failed: ' + ((typeof $json.error === 'string' ? $json.error : ($json.error && ($json.error.message || $json.error.description))) || 'AI generation or email delivery error') + ' | Execution ID: ' + $execution.id }}",
+            "processed_at": "={{ $now.toISO() }}",
+            "execution_id": "={{ $execution.id }}",
+            "email_subject": "={{ '' }}",
+            "subject_source": "={{ '' }}",
+            "topic_used": "={{ '' }}"
           },
           "matchingColumns": [
             "row_number"
@@ -557,6 +629,42 @@
               "canBeUsedToMatch": true
             },
             {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subject_override",
+              "displayName": "subject_override",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subject_source",
+              "displayName": "subject_source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "topic_used",
+              "displayName": "topic_used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
               "id": "row_number",
               "displayName": "row_number",
               "required": false,
@@ -576,13 +684,84 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        -5392,
+        -5120,
         2912
       ],
       "id": "f79e81e2-3a51-4bd4-9b0e-88b7980aea40",
       "name": "Update Failed Lead",
       "notesInFlow": false,
       "notes": "Logs failed executions and stores the error details for troubleshooting."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "parse-row-number",
+              "name": "row_number",
+              "value": "={{ $('Read Leads').item.json.row_number }}",
+              "type": "number"
+            },
+            {
+              "id": "parse-recipient-email",
+              "name": "recipient_email",
+              "value": "={{ $('Read Leads').item.json.recipient_email }}",
+              "type": "string"
+            },
+            {
+              "id": "parse-company",
+              "name": "company",
+              "value": "={{ $('Read Leads').item.json.company }}",
+              "type": "string"
+            },
+            {
+              "id": "parse-mode",
+              "name": "mode",
+              "value": "={{ $('Configuration').item.json.mode }}",
+              "type": "string"
+            },
+            {
+              "id": "parse-email-subject",
+              "name": "email_subject",
+              "value": "={{ ((($('Configuration').item.json.campaign_subject_prefix || '').toString().trim()) ? ($('Configuration').item.json.campaign_subject_prefix.toString().trim() + ' ') : '') + ((($('Read Leads').item.json.subject_override || '').toString().trim()) || ((($json.output || '').match(/(?:\\*\\*)?\\s*Subject\\s*:\\s*(.+)/i) || [null, ''])[1] || '').replace(/\\*\\*/g, '').trim() || ('Automation opportunity for ' + $('Read Leads').item.json.company)) }}",
+              "type": "string"
+            },
+            {
+              "id": "parse-email-body",
+              "name": "email_body",
+              "value": "={{ (((($json.output || '').replace(/^[\\s\\S]*?(?:\\*\\*)?\\s*Subject\\s*:\\s*.*(?:\\r?\\n|$)/i, '').trim()) || ($json.output || '').trim()).replace(/^\\s*(?:\\*\\*)?\\s*Language\\s*:\\s*.*(?:\\r?\\n|$)/i, '').replace(/\\*\\*/g, '').replace(/(?:\\r?\\n)+\\s*(?:best regards|kind regards|warm regards|regards|sincerely|thanks|thank you|saygılarımla|saygılarımızla|iyi çalışmalar|selamlar|sevgiler)\\b[\\s\\S]*$/i, '').trim()) + '\\n\\n' + ((/t[uü]rk|^tr$/i.test((($('Configuration').item.json.email_language || '').toString().trim() || ((($json.output || '').match(/^\\s*Language\\s*:\\s*(.+)$/im) || [null, ''])[1] || '').trim() || 'English')) ? $('Configuration').item.json.signature_closing_tr : $('Configuration').item.json.signature_closing_en) || '') + '\\n\\n' + ($('Configuration').item.json.signature_block || '') }}",
+              "type": "string"
+            },
+            {
+              "id": "parse-subject-source",
+              "name": "subject_source",
+              "value": "={{ ($('Read Leads').item.json.subject_override || '').toString().trim() ? 'manual' : 'ai' }}",
+              "type": "string"
+            },
+            {
+              "id": "parse-topic-used",
+              "name": "topic_used",
+              "value": "={{ ($('Read Leads').item.json.topic || '').toString().trim() || ($('Configuration').item.json.campaign_topic || '').toString().trim() || 'ai-choice' }}",
+              "type": "string"
+            },
+            {
+              "id": "parse-language-used",
+              "name": "email_language_used",
+              "value": "={{ (/t[uü]rk|^tr$/i.test((($('Configuration').item.json.email_language || '').toString().trim() || ((($json.output || '').match(/^\\s*Language\\s*:\\s*(.+)$/im) || [null, ''])[1] || '').trim() || 'English')) ? 'Turkish' : 'English') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -6320,
+        2176
+      ],
+      "id": "parse-email-node-0001",
+      "name": "Parse Email"
     }
   ],
   "pinData": {},
@@ -624,7 +803,7 @@
       "main": [
         [
           {
-            "node": "Check Send Mode",
+            "node": "Parse Email",
             "type": "main",
             "index": 0
           }
@@ -713,6 +892,17 @@
         [
           {
             "node": "Read Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Email": {
+      "main": [
+        [
+          {
+            "node": "Check Send Mode",
             "type": "main",
             "index": 0
           }

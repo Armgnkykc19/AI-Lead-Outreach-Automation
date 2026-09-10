@@ -1,0 +1,24 @@
+# Credentials and secrets
+.env
+.env.local
+*.key
+*.pem
+credentials.json
+token.json
+
+# n8n local data
+.n8n/
+n8n-data/
+
+# Real lead data (only the sanitized sample is tracked)
+leads.csv
+*_private.csv
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/

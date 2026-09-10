@@ -24,6 +24,7 @@ This project automates the complete lead outreach pipeline by reading leads from
 # Features
 
 - 🤖 AI-powered email generation using Google Gemini
+- 🎯 Per-lead topic control and manual subject override
 - 📊 Google Sheets as a lightweight CRM
 - 📧 Draft Mode & Send Mode
 - ✅ Automatic lead status updates
@@ -47,9 +48,10 @@ The workflow performs the following steps:
 1. Read leads from Google Sheets.
 2. Filter leads marked as **pending**.
 3. Generate a personalized email using Google Gemini.
-4. Create a Gmail Draft or send the email directly.
-5. Update the lead status and execution metadata.
-6. Handle failures automatically.
+4. Parse the AI output into a subject line and an email body.
+5. Create a Gmail Draft or send the email directly.
+6. Update the lead status and execution metadata.
+7. Handle failures automatically.
 
 ---
 
@@ -144,6 +146,37 @@ Before running the workflow:
 - Configure Google Gemini credentials.
 - Update the placeholder Google Sheet ID.
 - Configure the sender profile inside the **Configuration** node.
+
+### Campaign Control
+
+Emails are not written at random. What each email talks about is controlled at
+two levels, and the row always wins over the campaign default:
+
+| Setting | Where | Effect |
+|---------|-------|--------|
+| `topic` | Sheet column, per lead | The automation opportunity the email is built around |
+| `campaign_topic` | Configuration node | Fallback topic when a row leaves `topic` blank |
+| `subject_override` | Sheet column, per lead | Exact subject line to use instead of an AI-written one |
+| `campaign_subject_prefix` | Configuration node | Optional prefix added to every subject, e.g. `[Automation]` |
+| `email_language` | Configuration node | `Turkish`, `English`, or blank to follow the topic's language |
+
+Leave everything blank and the workflow behaves exactly as before: the AI picks
+both the topic and the subject line. Each run writes back `subject_source`
+(`manual` / `ai`) and `topic_used` so you can see what the AI decided.
+
+The signature is assembled after generation instead of being written by the AI, so it
+is always used exactly as configured. It is built from three Configuration fields:
+
+| Field | Example |
+|-------|---------|
+| `signature_closing_en` | `Best regards,` |
+| `signature_closing_tr` | `Saygılarımla,` |
+| `signature_block` | `John Doe`<br>`AI Automation Consultant`<br>`Your Company` |
+
+The closing line follows the language of the email, the block never changes. The
+language is decided by `email_language` when set, otherwise by the language the AI
+reports on the `Language:` line of its output, falling back to English. Each row's
+resolved language is available as `email_language_used`.
 
 ---
 
