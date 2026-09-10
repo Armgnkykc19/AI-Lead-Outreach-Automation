@@ -87,6 +87,9 @@ AI-Lead-Outreach-Automation
 ├── sample
 │   └── sample_leads.csv
 │
+├── scripts
+│   └── sync_workflow.py
+│
 ├── INSTALLATION.md
 ├── README.md
 ├── LICENSE
@@ -186,6 +189,31 @@ resolved language is available as `email_language_used`.
 - 📊 Sample lead dataset (`sample/sample_leads.csv`)
 - 📖 Installation guide (`INSTALLATION.md`)
 - 🖼️ Workflow and execution screenshots
+
+---
+
+# Keeping n8n and this Repository in Sync
+
+The copy in this repository is sanitised for publishing: no credentials and a
+placeholder Sheet ID. The copy running in n8n holds the real ones. Overwriting
+either with the other loses information, so use the sync script instead:
+
+```bash
+# repository structure -> n8n, keeping n8n's credentials and Sheet ID
+python scripts/sync_workflow.py push --workflow-id <id>
+
+# n8n structure -> repository, stripping credentials and the Sheet ID
+python scripts/sync_workflow.py pull --workflow-id <id>
+```
+
+Add `--dry-run` to see what would happen without writing anything, and
+`--container` if your n8n container is not named `n8n`. A push refuses to run
+when an expression in the repository copy contains a literal newline or has
+lost its `$json` reference, and refuses to import when the placeholder Sheet ID
+would overwrite the real one.
+
+Run `pull` after editing the workflow in the n8n editor, otherwise those edits
+live only inside n8n and are lost the next time someone pushes.
 
 ---
 
